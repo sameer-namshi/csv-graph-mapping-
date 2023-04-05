@@ -1,0 +1,167 @@
+:history
+
+CALL apoc.periodic.iterate(
+    'MATCH (p1:Product) RETURN p1',
+    'MATCH (p1)<-[:BOUGHT]-(customer:Customer)-[:BOUGHT]->(p2:Product)
+     WHERE p1 <> p2
+     WITH p1, p2, count(DISTINCT customer) AS co_purchased
+     WHERE co_purchased > 1 // set minimum threshold for co-purchased products
+     MERGE (p1)-[fbw:FREQUENTLY_BOUGHT_WITH]->(p2)
+     ON CREATE SET fbw.count = co_purchased
+     ON MATCH SET fbw.count = fbw.count + co_purchased',
+    {batchSize:10000, iterateList:true}
+);
+
+:sysinfo
+
+MATCH p=()-[r:FREQUENTLY_BOUGHT_WITH]->() RETURN p LIMIT 25;
+
+CALL dbms.components();
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+WITH DISTINCT product, count(*) AS purchaseCount
+ORDER BY purchaseCount DESC
+LIMIT 100
+RETURN DISTINCT product.sku_config AS productName, purchaseCount;
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+WITH DISTINCT product, count(*) AS purchaseCount
+ORDER BY purchaseCount DESC
+LIMIT 100
+RETURN product.sku_config AS productName, purchaseCount;
+
+CALL apoc.periodic.iterate(
+    'MATCH (p1:Product) RETURN p1',
+    'MATCH (p1)<-[:BOUGHT]-(customer:Customer)-[:BOUGHT]->(p2:Product)
+     WHERE p1 <> p2
+     WITH p1, p2, count(DISTINCT customer) AS co_purchased
+     WHERE co_purchased > 1 // set minimum threshold for co-purchased products
+     MERGE (p1)-[fbw:FREQUENTLY_BOUGHT_WITH]->(p2)
+     ON CREATE SET fbw.count = co_purchased
+     ON MATCH SET fbw.count = fbw.count + co_purchased',
+    {batchSize:10000, iterateList:true}
+);
+
+// Create the FREQUENTLY_BOUGHT_WITH relationship between products
+MATCH (p1:Product)<-[:BOUGHT]-(customer:Customer)-[:BOUGHT]->(p2:Product)
+WHERE p1 <> p2
+WITH p1, p2, count(DISTINCT customer) AS co_purchased
+WHERE co_purchased > 1 // set minimum threshold for co-purchased products
+MERGE (p1)-[fbw:FREQUENTLY_BOUGHT_WITH]->(p2)
+ON CREATE SET fbw.count = co_purchased
+ON MATCH SET fbw.count = fbw.count + co_purchased;
+
+// Create the FREQUENTLY_BOUGHT_WITH relationship between products
+MATCH (p1:Product)<-[:BOUGHT]-(c:Customer)-[:BOUGHT]->(p2:Product)
+WHERE p1 <> p2
+WITH p1, p2, count(DISTINCT customer) AS co_purchased
+WHERE co_purchased > 1 // set minimum threshold for co-purchased products
+MERGE (p1)-[fbw:FREQUENTLY_BOUGHT_WITH]->(p2)
+ON CREATE SET fbw.count = co_purchased
+ON MATCH SET fbw.count = fbw.count + co_purchased;
+
+MATCH (p1:Product)<-[:BOUGHT]-(c:Customer)-[:BOUGHT]->(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> '88072SH68PVP'
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.sku_config AS product_name, co_purchased;
+
+MATCH (p1:Product)<-[:BOUGHT]-(c:Customer)-[:BOUGHT]->(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> '88072SH68PVP'
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.name AS product_name, co_purchased;
+
+MATCH (p1:Product)<-[:BOUGHT]-(:Customer)-[:BOUGHT]->(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> '88072SH68PVP'
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.name AS product_name, co_purchased;
+
+MATCH (p1:Product)<-[:BOUGHT]-(:Customer)-[:BOUGHT]->(p2:Product)
+return p1;
+
+MATCH (p1:Product)<-[:BOUGHT]-(:Customer)
+return p1;
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+return p1;
+
+MATCH (p1:Product)-[:BOUGHT]->(c:Customer)
+return p1;
+
+MATCH (p1:Product)-[:BOUGHT]->(c:Customer)<-[:BOUGHT]-(p2:Product)
+return p1,p2;
+
+MATCH (p1:Product)-[:BOUGHT]->(c:Customer)<-[:BOUGHT]-(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> '88072SH68PVP'
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.name AS product_name, co_purchased;
+
+MATCH (p1:Product)-[:BOUGHT_BY]->(c:Customer)<-[:BOUGHT_BY]-(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> '88072SH68PVP'
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.name AS product_name, co_purchased;
+
+MATCH (p1:Product)-[:BOUGHT_BY]->(c:Customer)<-[:BOUGHT]-(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> '88072SH68PVP'
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.name AS product_name, co_purchased;
+
+MATCH (p1:Product)-[:BOUGHT_BY]->(c:Customer)-[:BOUGHT]->(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> '88072SH68PVP'
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.name AS product_name, co_purchased;
+
+MATCH (p1:Product)-[:BOUGHT_BY]->(c:Customer)-[:BOUGHT]->(p2:Product)
+WHERE p1.sku_config = '88072SH68PVP' AND p2.sku_config <> $sku_config
+WITH p2, count(DISTINCT c) AS co_purchased
+ORDER BY co_purchased DESC
+LIMIT 10
+RETURN p2.name AS product_name, co_purchased;
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+WITH DISTINCT product, count(*) AS purchaseCount
+ORDER BY purchaseCount DESC
+LIMIT 10
+RETURN product.sku_config AS productName, purchaseCount;
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+WITH DISTINCT product, count(*) AS purchaseCount
+ORDER BY purchaseCount DESC
+LIMIT 10
+RETURN product.name AS productName, purchaseCount;
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+WITH product, count(*) AS purchaseCount
+ORDER BY purchaseCount DESC
+LIMIT 10
+RETURN DISTINCT product.sku_config AS productName, purchaseCount;
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+WITH product, count(*) AS purchaseCount
+ORDER BY purchaseCount DESC
+LIMIT 10
+RETURN product.sku_config AS productName, purchaseCount;
+
+MATCH (product:Product)<-[:BOUGHT]-(:Customer)
+WITH product, count(*) AS purchaseCount
+ORDER BY purchaseCount DESC
+LIMIT 10
+RETURN product.name AS productName, purchaseCount;
+
+match (p:Product{sku_config:'14448SHVVSGP'})
+return p;
+
+match (p:Product{sku_config:'14448SHVVSGP'});

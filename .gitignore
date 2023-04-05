@@ -1,0 +1,12 @@
+csv
+node_modules
+yarn-error.log
+.idea
+benchmarks/*.bin
+.history
+.nyc_output
+coverage
+.DS_Store
+vscode/*.json
+.vscode
+.vscode/launch.json
