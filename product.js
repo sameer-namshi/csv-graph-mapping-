@@ -180,7 +180,6 @@ async function load(products) {
           MERGE (p)-[:HAS_PRICE_LEVEL]->(pl)
           MERGE (p)-[:HAS_MERCH_TYPE]->(mt)
           MERGE (p)-[:FOR_AGE_GROUP]->(ag)
-          MERGE (p)-[:FOR_AGE_GROUP]->(ag)
           MERGE (p)-[:PART_OF]->(order)
         `, {
                 sku_config: product.sku_config,
