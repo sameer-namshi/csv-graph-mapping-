@@ -27,4 +27,4 @@
 (Customer)-[:IN_COUNTRY]->(Color)
 (Customer)-[:LIKES]->(Color)
 
-(Product)-[:IN_WISHLIST]->(Customer
+(Product)-[:IN_WISHLIST]->(Customer)

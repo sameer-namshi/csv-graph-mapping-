@@ -3,9 +3,6 @@ SELECT
     i.fk_customer, 
     i.order_date_key,
     i.order_nr,
-    pw.customer as wishlist_customer,
-    pw.sku as wishlist_sku,
-    pw.updated_at as wishlist_updated_at,
     d.brand_clean as brand, 
     d.name,
     d.activated_at, 
@@ -30,12 +27,26 @@ SELECT
     c.RPC_gross_per_month,
     c.RPC_net_per_month,
     c.TPC_per_month,
-    cust.gender as wishlist_customer_gender,
-    cust.generation as wishlist_customer_generation,
-    cust.country_name as wishlist_customer_country,
-    cust.RPC_gross_per_month as wishlist_rpc_gross,
-    cust.RPC_net_per_month as wishlist_rpc_net,
-    cust.TPC_per_month as wishlist_tpc
+    pw.customer as wishlist_customer,
+    pw.sku as wishlist_sku,
+    pw.updated_at as wishlist_updated_at,
+    wid.brand_clean as wl_p_brand, 
+    wid.name as wl_p_name,
+    wid.activated_at as wl_p_activated_at, 
+    wid.season as wl_p_season, 
+    wid.color as wl_p_color, 
+    wid.department as wl_p_department, 
+    wid.category_clean as wl_p_category, 
+    wid.subcategory_clean as wl_p_subcategory,
+    wid.gender_clean as wl_p_product_gender, 
+    wid.age_group as wl_p_age_group, 
+    wid.price as wl_p_price , 
+    wid.price_level as wl_p_price_level , 
+    wid.merch_type as wl_p_merch_type, 
+    wid.occasion as wl_p_occasion, 
+    wid.short_description as wl_p_short_description, 
+    wid.namshi_description as wl_p_namshi_description, 
+    wid.special_type as wl_p_special_type
 
 FROM 
     `namshi-analytics.DatalabsSelfServe.item_sales` i
@@ -50,15 +61,15 @@ ON
 JOIN
   `namshi-analytics.DatalabsSelfServe.product_wishlist` pw
 ON 
-  i.sku_config = pw.sku
+  i.fk_customer = pw.customer
   AND pw.updated_at >= '2023-04-01'
 JOIN 
-    `namshi-analytics.DatalabsSelfServe.customer_d` cust
+    `namshi-analytics.DatalabsSelfServe.item_d` wid
 ON 
-    pw.customer = cust.id_customer
+    pw.sku = wid.sku_config
 WHERE 
     i.order_date_key >= '2023-04-01'
     AND i.country = 'AE' 
     AND i.city = 'Dubai' 
     AND i.status_name = 'delivered'
-ORDER BY i.order_date_key desc
+ORDER BY i.fk_customer, i.order_date_key, i.order_nr desc

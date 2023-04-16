@@ -77,7 +77,6 @@ const formatProductDetails = (productDetails) => {
 
     productDetails.product_gender = toPascalCase(productDetails.product_gender)
     productDetails.customer_gender = toPascalCase(productDetails.customer_gender)
-    productDetails.wishlist_customer_gender = toPascalCase(productDetails.wishlist_customer_gender)
 
     productDetails.brand = toPascalCase(productDetails.brand)
     productDetails.color = toPascalCase(productDetails.color)
@@ -94,16 +93,26 @@ const formatProductDetails = (productDetails) => {
     productDetails.customer_generation_name = customerGenDetails.generation_name
     productDetails.customer_generation_year = customerGenDetails.generation_year
 
-    const wishlistCustomerGenDetails = getGenerationDetails(productDetails.customer_generation)
-    productDetails.wishlist_customer_generation_name = wishlistCustomerGenDetails.generation_name
-    productDetails.wishlist_customer_generation_year = wishlistCustomerGenDetails.generation_year
-
     productDetails.short_description = (productDetails.short_description).toString().replace(/"/g, "\'")
     productDetails.namshi_description = (productDetails.namshi_description).toString().replace(/"/g, "\'")
+    
+    productDetails.wl_p_product_gender = toPascalCase(productDetails.wl_p_product_gender)
 
-    productDetails.name = (productDetails.name).toString().replace(";", ",")
-    productDetails.short_description = (productDetails.short_description).toString().replace(";", ",")
-    productDetails.namshi_description = (productDetails.namshi_description).toString().replace(";", ",")
+    productDetails.wl_p_brand = toPascalCase(productDetails.wl_p_brand)
+    productDetails.wl_p_color = toPascalCase(productDetails.wl_p_color)
+    productDetails.wl_p_department = toPascalCase(productDetails.wl_p_department)
+    productDetails.wl_p_category = toPascalCase(productDetails.wl_p_category)
+    productDetails.wl_p_subcategory = toPascalCase(productDetails.wl_p_subcategory)
+    productDetails.wl_p_age_group = toPascalCase(productDetails.wl_p_age_group)
+    productDetails.wl_p_merch_type = toPascalCase(productDetails.wl_p_merch_type)
+    productDetails.wl_p_occasion = toPascalCase(productDetails.wl_p_occasion)
+    productDetails.wl_p_special_type = toPascalCase(productDetails.wl_p_special_type)
+
+    productDetails.wl_p_short_description = (productDetails.wl_p_short_description).toString().replace(/"/g, "\'")
+    productDetails.wl_p_namshi_description = (productDetails.wl_p_namshi_description).toString().replace(/"/g, "\'")
+    // productDetails.name = (productDetails.name).toString().replace(";", ",")
+    // productDetails.short_description = (productDetails.short_description).toString().replace(";", ",")
+    // productDetails.namshi_description = (productDetails.namshi_description).toString().replace(";", ",")
     
     return productDetails;
 }
