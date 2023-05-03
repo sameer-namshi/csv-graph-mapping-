@@ -1,61 +1,101 @@
-Recommended For You based on purchase history and wishlist products
-This is a modulation to the existing similar purchase history cypher which returns product recommendations based on purchase history
-We have now combined the result with the wishlist products and provide better recommendations
-We analyse the purchase history and the wishlist of the customer and get the top 3 favourite brands, subcategory and price level of customers and recommend products based on the same
-============================================================================
+// RECOMMENDED FOR YOU BY SCORE, COMBINATION
+------------------------------------------
+// FETCH ALL SKUs AND COMBINATIONS PURCHASED BY CUSTOMER 
+// 14309080, 9996808, 9997167
 
-// Find the top 3 most frequently purchased price levels by the customer with ID '5654988'
-//147944
-//417232 , 58788
-CALL {
-    MATCH (customer:Customer{id:"147944"})<-[:IN_WISHLIST]-(:Product)-[:IN_PRICE_LEVEL]->(priceLevel:PriceLevel)
-    RETURN priceLevel, count(*) AS priceLevelCount
-    UNION
-    MATCH (customer:Customer{id:"147944"})<-[:BOUGHT]-(:Product)-[:IN_PRICE_LEVEL]->(priceLevel:PriceLevel)
-    RETURN priceLevel, count(*) AS priceLevelCount
-}
-WITH priceLevel, priceLevelCount 
-ORDER BY priceLevelCount desc
-LIMIT 5
-WITH collect(priceLevel) as topPriceLevels, priceLevelCount
-CALL {
-    MATCH (customer:Customer{id:"147944"})<-[:IN_WISHLIST]-(product:Product)-[:IN_BRAND]->(brand:Brand)
-    RETURN brand, count(*) AS brandCount
-    UNION
-    MATCH (customer:Customer{id:"147944"})-[:BOUGHT]->(purchasedProduct:Product)-[:IN_BRAND]->(brand:Brand)
-    RETURN brand, count(*) AS brandCount
-}
-WITH brand, brandCount,topPriceLevels
-ORDER BY brandCount desc
-LIMIT 5
-WITH collect(brand) as topBrands, topPriceLevels
+// WITH toString(date() - duration({days: 15})) AS dateRange
+// MATCH (cust:Customer {id:"9996808"} )-[r:BOUGHT]->(purchasedProduct:Product)
+// ===================================================
+// WITH toString(date() - duration({days: 30})) AS dateRange
+// MATCH (cust:Customer {id:"9997167"})-[r:BOUGHT]->(purchasedProduct:Product)
+// ===================================================
 
-// Find the top 3 most frequently purchased subcategories by the customer with ID $customerId, in combination with the top price levels and brands
-CALL {
-    MATCH (customer:Customer{id:"147944"})<-[:IN_WISHLIST]-(product:Product)-[:IN_SUBCATEGORY]->(subcategory:Subcategory)
-    RETURN subcategory, count(*) AS subcategoryCount
-    UNION
-    MATCH (customer:Customer{id:"147944"})-[:BOUGHT]->(purchasedProduct:Product)-[:IN_SUBCATEGORY]->(subcategory:Subcategory)
-    RETURN subcategory, count(*) AS subcategoryCount
+// Get all SKUs purchased by customer in a specific dateRange
+WITH toString(date() - duration({days: 30})) AS dateRange
+MATCH (cust:Customer {id:"14309080"})-[r:BOUGHT]->(purchasedProduct:Product)
+WHERE r.order_date >= dateRange
+MATCH (purchasedProduct)-[:IN_SUBCATEGORY]->(sub:Subcategory)
+MATCH (purchasedProduct)-[:IN_BRAND]->(br:Brand)
+MATCH (purchasedProduct)-[:IN_PRICE_LEVEL]->(pl:PriceLevel)
+
+// Construct the combinations 
+// purchasedCombinations - (subcategory,brand,priceLevel) - ["Sweaters,Seventy Five,pl3", "Cardigans,Defacto,pl3", "Pants,Puma,pl4"]
+// purchasedBrandSubCombinations - (subcategory,brand) - ["Sweaters,Seventy Five", "Cardigans,Defacto", "Pants,Puma"]
+// subGenderPreferences - (subcategory,gender) - ["Sweaters,Male", "Shoes,Female"]
+// preferredGenders - [Male] 
+// purchasedSKUs - ["11136AT14TAP","11136ATBIHMP"]
+WITH cust, collect( distinct COALESCE(purchasedProduct.subcategory,"")+','+ COALESCE(purchasedProduct.brand,"")+','+ COALESCE(purchasedProduct.priceLevel,"")) as purchasedCombinations,
+collect( distinct  COALESCE(purchasedProduct.subcategory,"")+','+ COALESCE(purchasedProduct.brand,"")) as purchasedBrandSubCombinations,
+collect(purchasedProduct.sku_config) as purchasedSKUs,
+collect( distinct  COALESCE(purchasedProduct.subcategory,"")+','+ COALESCE(purchasedProduct.gender,"")) as subGenderPreferences, 
+collect(distinct purchasedProduct.gender) as preferredGenders
+
+// Get all Subcategories, Brands and Price Levels that the customer is interested in
+MATCH (cust)-[l:INTERESTED_IN]->(:Subcategory)
+WITH sum(l.count) as totalLikes, cust, purchasedCombinations, purchasedBrandSubCombinations, purchasedSKUs, subGenderPreferences, preferredGenders
+MATCH (cust)-[subCatInterests:INTERESTED_IN]->(sub:Subcategory)
+MATCH (cust)-[brandInterests:LIKES]->(br:Brand)
+MATCH (cust)-[priceLevelInterests:BOUGHT_PRICE_LEVEL]->(pl:PriceLevel)
+
+// CALCULATE SCORES FOR EACH SUBCATEGORY, BRAND AND PRICE LEVEL THAT THE CUSTOMER IS INTERESTED IN
+//  apoc.map.fromLists([subcategory1,subcategory2, subcategory3], [{subcategory: subcategory1, subCatCount:30, like: 0.07142857142857},{subcategory: subcategory2, subCatCount:15, like: 0.142857142857}])
+WITH apoc.map.fromLists(collect(distinct sub.name), collect(distinct {subcategory: sub.name, subCatCount:subCatInterests.count, like: toFloat(subCatInterests.count)/toFloat(totalLikes)})) as catScore,
+apoc.map.fromLists(collect(distinct br.name), collect(distinct {brand: br.name, brandCount:brandInterests.count, like: toFloat(brandInterests.count)/toFloat(totalLikes)})) as brScore, 
+apoc.map.fromLists(collect(distinct pl.name), collect(distinct {priceLevel: pl.name, proiceLevelCount: priceLevelInterests.count, like: toFloat(priceLevelInterests.count)/toFloat(totalLikes)})) as plScore, 
+collect(distinct br.name) AS brands, collect(distinct sub.name) AS categories,
+collect(distinct pl.name) AS priceLevels,
+totalLikes, purchasedCombinations, purchasedBrandSubCombinations, purchasedSKUs, subGenderPreferences, preferredGenders
+
+// GET RECOMMENDED PRODUCTS BY SUBCATEGORY, BRAND AND PRICE LEVEL
+MATCH (recommendedProducts :Product)<-[:BOUGHT]-(:Customer)
+WHERE recommendedProducts.subcategory IN categories
+AND recommendedProducts.brand IN brands
+AND recommendedProducts.priceLevel IN priceLevels
+AND recommendedProducts.gender IN preferredGenders
+// DO NOT INCLUDE PRODUCTS THAT WERE ALREADY PURCHASED
+AND NOT recommendedProducts.sku_config IN purchasedSKUs
+
+WITH collect({sku_config: recommendedProducts.sku_config,
+ subcategory:recommendedProducts.subcategory,
+  name: recommendedProducts.name, brand: recommendedProducts.brand,
+  priceLevel: recommendedProducts.priceLevel, gender: recommendedProducts.gender })[..1] AS recommendations, 
+  recommendedProducts.sku_config AS SKU,
+  apoc.map.get(brScore, recommendedProducts.brand, 0, false) as brScore,
+  apoc.map.get(catScore, recommendedProducts.subcategory, 0, false) as catScore,
+  apoc.map.get(plScore, recommendedProducts.priceLevel, 0, false) as plScore,
+  purchasedCombinations, purchasedBrandSubCombinations, purchasedSKUs, subGenderPreferences, 
+  preferredGenders
+   
+
+UNWIND recommendations as recommendedProducts
+
+// CALCULATE SCORES FOR EACH PRODUCT BASED ON BRAND, SUBCATEGORY AND PRICE LEVEL SCORES
+WITH recommendedProducts,(5 * catScore.like + 3 * brScore.like + plScore.like) as score, 
+ recommendedProducts.brand as brandName, recommendedProducts.subcategory as subCategoryName, recommendedProducts.priceLevel as priceLevel, recommendedProducts.gender as gender,
+ (COALESCE(recommendedProducts.subcategory ,"") + ',' + COALESCE(recommendedProducts.gender ,"")) AS genderSubCombination,
+ (COALESCE(recommendedProducts.subcategory ,"") + ',' + COALESCE(recommendedProducts.brand ,"")) AS brandSubcombination,
+ (COALESCE(recommendedProducts.subcategory ,"") + ',' + COALESCE(recommendedProducts.brand ,"")+ ',' + COALESCE(recommendedProducts.priceLevel ,"")) AS combination,
+ purchasedCombinations, purchasedBrandSubCombinations, purchasedSKUs, subGenderPreferences
+
+// BOOST SCORES OF PRODUCTS UNDER THE PURCHASED COMBINATIONS
+WITH 
+ recommendedProducts.sku_config as SKU, recommendedProducts.name as productName,
+  CASE
+    WHEN combination IN purchasedCombinations THEN score * 5
+    WHEN brandSubcombination IN purchasedBrandSubCombinations THEN score * 3
+    WHEN genderSubCombination IN subGenderPreferences THEN score * 3
+    ELSE score
+  END AS productScore, brandName, subCategoryName, priceLevel, combination
  
-}
-WITH subcategory, count(*) AS subcategoryCount, topBrands, topPriceLevels
-ORDER BY subcategoryCount DESC
-LIMIT 5
-WITH collect(subcategory) as topSubcategories, topBrands, topPriceLevels
+ // FILTER 3 SKUs FROM EACH COMBINATION FOR MORE DIVERSE RESULTS
+ WITH collect({ SKU:SKU, 
+ productName:productName, productScore:productScore,
+ brandName:brandName, combination:combination,
+ subCategoryName:subCategoryName, 
+ priceLevel: priceLevel})[..1] as recommendedProducts, combination
 
-// For each combination of top price level, brand, and subcategory, find all products that have not been bought by the customer with ID $customerId
-UNWIND topPriceLevels AS currentPriceLevel
-UNWIND topBrands AS currentBrand
-UNWIND topSubcategories AS currentSubcategory
+ UNWIND recommendedProducts as RPS
 
-MATCH (product:Product)-[:IN_BRAND]->(currentBrand)
-MATCH (product)-[:IN_PRICE_LEVEL]->(currentPriceLevel)
-MATCH (product)-[:IN_SUBCATEGORY]->(currentSubcategory)
-MATCH (product)-[:HAS_COLOR]->(color:Color)
-MATCH (product)-[:FOR_OCCASION]->(occasion:Occasion)
-
-WHERE NOT (:Customer{id:"147944"})-[:BOUGHT]->(product)
-
-// Return the SKU, name, gender, subcategory, color, brand, occasion, and price level of each product that meets the above conditions
-RETURN DISTINCT product.sku_config as sku , product.name AS name, product.product_gender as product_gender, currentSubcategory.name AS subcategory, color.name AS color, currentBrand.name AS brand, occasion.name AS occasion, currentPriceLevel.name AS price_level
+ RETURN RPS.SKU AS sku, RPS.productName as productName, 
+ RPS.subCategoryName as category, RPS.brandName as brand, RPS.priceLevel as priceLevel, RPS.productScore as productScore
+ ORDER BY RPS.productScore DESC
