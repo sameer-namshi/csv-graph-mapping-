@@ -11,7 +11,7 @@
 // ===================================================
 
 // Get all SKUs purchased by customer in a specific dateRange
-WITH toString(date() - duration({days: 30})) AS dateRange
+WITH toString(date() - duration({days: 60})) AS dateRange
 MATCH (cust:Customer {id:"14309080"})-[r:BOUGHT]->(purchasedProduct:Product)
 WHERE r.order_date >= dateRange
 MATCH (purchasedProduct)-[:IN_SUBCATEGORY]->(sub:Subcategory)
@@ -47,8 +47,9 @@ collect(distinct br.name) AS brands, collect(distinct sub.name) AS categories,
 collect(distinct pl.name) AS priceLevels,
 totalLikes, purchasedCombinations, purchasedBrandSubCombinations, purchasedSKUs, categoryGenderPreferences, categoryAgeGroupPreferences, preferredGenders
 
+
 // GET RECOMMENDED PRODUCTS BY SUBCATEGORY, BRAND AND PRICE LEVEL
-MATCH (recommendedProducts :Product)<-[:BOUGHT]-(:Customer)
+MATCH (recommendedProducts :Product)
 WHERE recommendedProducts.subcategory IN categories
 AND recommendedProducts.brand IN brands
 AND recommendedProducts.priceLevel IN priceLevels
@@ -83,12 +84,20 @@ WITH recommendedProducts,(5 * catScore.like + 3 * brScore.like + plScore.like) a
 WITH 
  recommendedProducts.sku_config as SKU, recommendedProducts.name as productName,
   CASE
-    WHEN combination IN purchasedCombinations THEN score * 5
-    WHEN brandSubcombination IN purchasedBrandSubCombinations THEN score * 3
-    WHEN genderSubCombination IN categoryGenderPreferences THEN score * 5
-    WHEN productAgeCategoryCombination IN categoryAgeGroupPreferences THEN score * 3
+    WHEN combination IN purchasedCombinations THEN score * 9
+    WHEN brandSubcombination IN purchasedBrandSubCombinations THEN score * 7
     ELSE score
-  END AS productScore, brandName, subCategoryName, priceLevel, combination,brandSubcombination
+  END AS productScore, brandName, subCategoryName, priceLevel, combination,brandSubcombination,categoryGenderPreferences, categoryAgeGroupPreferences,genderSubCombination,productAgeCategoryCombination
+  ORDER BY productScore DESC
+
+
+WITH 
+ SKU, productName,
+  CASE
+    WHEN genderSubCombination IN categoryGenderPreferences THEN productScore * 5
+    WHEN productAgeCategoryCombination IN categoryAgeGroupPreferences THEN productScore * 3
+    ELSE productScore
+  END AS productScore, brandName, subCategoryName, priceLevel, combination,brandSubcombination,genderSubCombination, productAgeCategoryCombination as acc
   ORDER BY productScore DESC
 
 // Collecting SKUs by combination
@@ -97,6 +106,7 @@ WITH collect({ SKU:SKU,
  brandName:brandName, combination:combination,
  brandSubcombination: brandSubcombination,
  subCategoryName:subCategoryName, 
+ genderSubCombination: genderSubCombination,
  priceLevel: priceLevel}) as recommendedProducts, brandSubcombination, RANGE(1, COUNT(SKU)) AS indexes
 
 // Creating layers of recommendations by calculating a sort value for each recommendation
@@ -107,12 +117,12 @@ CALL {
 }
 
 // Calculating maxScore for score normalization
-WITH collect(recommendations) as rps, max(recommendations.score) as maxScore
+WITH collect(recommendations) as rps, max(recommendations.productScore) as maxScore
 
 UNWIND rps as recommendations
 
 RETURN recommendations.SKU AS SKU, recommendations.productName AS productName, 
-recommendations.subCategoryName as category, recommendations.brandName as brand, recommendations.priceLevel as priceLevel,
+recommendations.subCategoryName as category, recommendations.brandName as brand,recommendations.genderSubCombination as gsc, recommendations.priceLevel as priceLevel,
 (recommendations.productScore/maxScore) as score, recommendations.brandSubcombination as brandSubCombination, recommendations.combination as combination, 
 recommendations.sortVal as index
-ORDER BY recommendations.sortVal, recommendations.productScore DESC
+ORDER BY recommendations.sortVal,recommendations.productScore DESC

@@ -1,3 +1,4 @@
+// Fetch data only required for relationships
 SELECT 
     pw.customer as fk_customer,
     pw.sku as sku_config,

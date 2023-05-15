@@ -1,5 +1,46 @@
 const fs = require('fs');
 const csv = require('csv-parser');
+const path = require('path');
+
+const readAndLoadCSV = async(dirPath, filePrefix, loadFunc) => {
+  try {
+      const files = fs.readdirSync(dirPath);
+
+      const data = [];
+      for (const file of files) {
+          if (file.startsWith(filePrefix) && file.endsWith('.csv')) {
+              const filePath = path.join(dirPath, file);
+              filesuffix = filePath.slice(-7)
+              totalRecords = 0;
+              const stream = fs.createReadStream(filePath).pipe(csv());
+
+              let buffer = [];
+              for await (const row of stream) {
+                  buffer.push(row);
+
+                  if (buffer.length == 3000) {
+                      // Process the buffer
+                      await loadFunc(buffer, totalRecords, filesuffix)
+                      totalRecords += buffer.length
+                      // Clear the buffer
+                      buffer = [];
+                  }
+              }
+
+              console.log(buffer)
+              // Process any remaining rows in the buffer
+              if (buffer.length > 0) {
+                  totalRecords += buffer.length
+                  await loadFunc(buffer, totalRecords, filesuffix)
+              }
+          }
+      }
+      return data;
+  } catch (error) {
+      console.error(error);
+  }
+
+}
 
 async function readCSVFile(filePath, columns = null) {
     return new Promise((resolve, reject) => {
@@ -76,7 +117,6 @@ const getGenerationDetails = (generationDetails) => {
 const formatProductDetails = (productDetails) => {
 
     productDetails.product_gender = toPascalCase(productDetails.product_gender)
-    productDetails.customer_gender = toPascalCase(productDetails.gender)
 
     productDetails.brand = toPascalCase(productDetails.brand)
     productDetails.color = toPascalCase(productDetails.color)
@@ -89,18 +129,26 @@ const formatProductDetails = (productDetails) => {
     productDetails.special_type = toPascalCase(productDetails.special_type)
     productDetails.world_tag = toPascalCase(productDetails.world_tag)
 
-    const customerGenDetails = getGenerationDetails(productDetails.generation)
-    productDetails.customer_generation_name = customerGenDetails.generation_name
-    productDetails.customer_generation_year = customerGenDetails.generation_year
-
     productDetails.short_description = (productDetails.short_description).toString().replace(/"/g, "\'")
     productDetails.namshi_description = (productDetails.namshi_description).toString().replace(/"/g, "\'")
     
     return productDetails;
 }
 
+const formatCustomerDetails = (customerDetails) => {
+  
+  customerDetails.customer_gender = toPascalCase(customerDetails.gender)
+
+  const customerGenDetails = getGenerationDetails(customerDetails.generation)
+  customerDetails.customer_generation_name = customerGenDetails.generation_name
+  customerDetails.customer_generation_year = customerGenDetails.generation_year
+
+  return customerDetails
+}
 
 module.exports = {
     readCSVFile,
-    formatProductDetails
+    readAndLoadCSV,
+    formatProductDetails,
+    formatCustomerDetails
   };

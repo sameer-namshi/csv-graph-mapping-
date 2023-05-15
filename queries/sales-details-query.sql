@@ -1,4 +1,4 @@
-
+// Fetch data required only for relationships
 SELECT 
     i.sku_config,
     i.fk_customer, 

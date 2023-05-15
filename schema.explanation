@@ -6,6 +6,7 @@
 (Product)-[:IN_DEPARTMENT]->(Department {name: $dept})
 (Product)-[:BELONGS_TO]->(Season {name: $season})
 (Product)-[:FOR_OCCASION]->(Occasion {name: $occasion})
+(product)-[:IN_GENDER]->(Gender {name:$gender})
 (Product)-[:IN_PRICE_LEVEL]->(PriceLevel {name: $priceLevel})
 (Product)-[:IN_MERCH_TYPE]->(MerchType {name: $merchType})
 (Product)-[:IN_AGE_GROUP]->(AgeGroup {name: $ageGroup})
@@ -32,3 +33,7 @@
 (Customer)-[:LIKES]->(Color {name: $color})
 
 (Product)-[:IN_WISHLIST {updated_at: $updatedAt, count: 1}]->(Customer)
+
+// Create new relationships between skus - simples - customers
+// update existing products to have size, stocks, country related visibility
+// Try to separate interested relationships from purchase_history, and wishlist
