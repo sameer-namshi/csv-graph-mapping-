@@ -252,19 +252,19 @@ const createCustomerProductAttrRel = async (tx, customerId, sku, category, subca
         MATCH (priceLevel:PriceLevel {name: $priceLevel})
         MATCH (merchType:MerchType {name: $merchType})
 
-        MERGE(customer)-[catRel:INTERESTED_IN]->(category)
+        MERGE(customer)-[catRel:INTERESTED_CATEGORY]->(category)
             ON CREATE SET catRel.count = 1
             ON MATCH SET catRel.count = catRel.count + 1
-        MERGE(customer)-[subcatRel:INTERESTED_IN]->(subcategory)
+        MERGE(customer)-[subcatRel:INTERESTED_SUBCATEGORY]->(subcategory)
             ON CREATE SET subcatRel.count = 1
             ON MATCH SET subcatRel.count = subcatRel.count + 1
-        MERGE(customer)-[brandRel:LIKES]->(brand)
+        MERGE(customer)-[brandRel:INTERESTED_BRAND]->(brand)
             ON CREATE SET brandRel.count = 1
             ON MATCH SET brandRel.count = brandRel.count + 1
         MERGE(customer)-[deptRel:INTERESTED_IN]->(dept)
             ON CREATE SET deptRel.count = 1
             ON MATCH SET deptRel.count = deptRel.count + 1
-        MERGE(customer)-[plRel:BOUGHT_PRICE_LEVEL]->(priceLevel)
+        MERGE(customer)-[plRel:INTERESTED_PRICE_LEVEL]->(priceLevel)
             ON CREATE SET plRel.count = 1
             ON MATCH SET plRel.count = plRel.count + 1
         MERGE(customer)-[mtRel:INTERESTED_IN]->(merchType)

@@ -18,7 +18,7 @@ const readAndLoadCSV = async(dirPath, filePrefix, loadFunc) => {
               for await (const row of stream) {
                   buffer.push(row);
 
-                  if (buffer.length == 3000) {
+                  if (buffer.length == 1000) {
                       // Process the buffer
                       await loadFunc(buffer, totalRecords, filesuffix)
                       totalRecords += buffer.length
@@ -26,8 +26,6 @@ const readAndLoadCSV = async(dirPath, filePrefix, loadFunc) => {
                       buffer = [];
                   }
               }
-
-              console.log(buffer)
               // Process any remaining rows in the buffer
               if (buffer.length > 0) {
                   totalRecords += buffer.length

@@ -36,3 +36,4 @@ FROM
 WHERE d.sku is not null 
 AND d.status != "deleted" 
 AND if_activated = 1
+ORDER BY d.sku

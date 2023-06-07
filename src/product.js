@@ -8,7 +8,7 @@ const path = require('path');
 const csv = require('csv-parser');
 
 let totalRecords = 0;
-let filesuffix = "";
+let skuMap = {};
 
 async function extractAndLoad() {
     try {
@@ -24,6 +24,10 @@ async function extractAndLoad() {
 }
 
 const createProductNodes = async (tx, productDetails) => {
+
+    if(skuMap[productDetails.sku_config]){
+        return false;
+    }
 
     productDetails = formatProductDetails(productDetails);
     const {
@@ -153,7 +157,7 @@ const createProductNodes = async (tx, productDetails) => {
         })
     }
 
-   
+    skuMap[sku_config] = true;
 
     return true;
 
@@ -167,7 +171,7 @@ async function createProductSimpleNode (tx, product){
 
     await tx.run(`
 
-    MERGE (product:Product {sku_config: $skuConfig})    
+    MATCH (product:Product {sku_config: $skuConfig})    
     MERGE (simple:ProductSimple {sku: $sku})
         ON CREATE
          SET simple.sku_config= $skuConfig, simple.size= $size, simple.ksaUnits = $ksaUnits, simple.uaeUnits = $uaeUnits
@@ -199,11 +203,16 @@ async function load(products, totalRecords = 0, filesuffix = "") {
         const tx = session.beginTransaction();
         for (const product of products) {
             
-            await createProductNodes(tx,product)                
+            isProductExists = false;
+            if(!skuMap[product.sku_config]){
+                await createProductNodes(tx,product)                
+            } else {
+                isProductExists = true;
+            }
             await createProductSimpleNode(tx,product)
             
             totalRecords = totalRecords + 1;
-            console.log(product.sku, product.sku_config, totalRecords+' - '+filesuffix);
+            console.log(product.sku, product.sku_config, isProductExists, totalRecords+' - '+filesuffix), product.is_visible;
 
         }
         await tx.commit();
