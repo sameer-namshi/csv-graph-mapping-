@@ -1,14 +1,74 @@
-(Product)-[:PART_OF]->(order)
-(Customer)-[:BOUGHT]->(Product)
-(Customer)-[:BELONGS_TO]->(Gender)
-(Product)-[:IN_CATEGORY]->(Category)
-(Product)-[:IN_SUBCATEGORY]->(Subcategory)
+### Product Nodes and Relationships
+-----------------------------------
+
+(Product {sku_config: $sku_config, 
+            name: $name, activated_at: $activated_at, short_description: $short_description, description: $namshi_description,
+            gender:$product_gender, ageGroup:$age_group, 
+            subcategory:$subcategory, priceLevel:$price_level, brand:$brand, 
+            isVisible : $isVisible, country_visibility_ae : $aeVisibility, country_visibility_bh : $bhVisibility,
+            country_visibility_kw : $kwVisibility, country_visibility_om : $omVisibility, 
+            country_visibility_qa : $qaVisibility, country_visibility_sa : $saVisibility, 
+            country_visibility_us : $usVisibility,
+            ksaUnits : $totalSimpleKsaUnits, uaeUnits : $totalSimpleUaeUnits})
+
+(Product)-[:IN_CATEGORY]->(Category {name: $category})
+(Product)-[:IN_SUBCATEGORY]->(Subcategory {name: $subCategory})
 (Category)-[:HAS_CHILD]->(Subcategory)
-(Product)-[:BELONGS_TO]->(Subcategory)
-(Product)-[:IN_COLOR]->(Color)
-(Product)-[:BY_BRAND]->(Brand)
-(Product)-[:BELONGS_TO]->(Department)
-(Product)-[:FOR_OCCASION]->(Occasion)
-(Product)-[:HAS_PRICE_LEVEL]->(PriceLevel)
-(Product)-[:HAS_MERCH_TYPE]->(MerchType)
-(Product)-[:FOR_AGE_GROUP]->(AgeGroup)
+(Product)-[:IN_BRAND]->(Brand {name:brand})
+(Product)-[:IN_DEPARTMENT]->(Department {name: $dept})
+(Product)-[:BELONGS_TO]->(Season {name: $season})
+(product)-[:IN_GENDER]->(Gender {name:$gender})
+(Product)-[:IN_PRICE_LEVEL]->(PriceLevel {name: $priceLevel})
+(Product)-[:IN_MERCH_TYPE]->(MerchType {name: $merchType})
+(Product)-[:IN_AGE_GROUP]->(AgeGroup {name: $ageGroup})
+
+(Product)-[:HAS_COLOR]->(Color {name: $color})
+(Product)-[:HAS_TYPE]->(SpecialType {name: $specialType})
+(Product)-[:FOR_OCCASION]->(Occasion {name: $occasion})
+(Product)-[:TAGGED_AS]->(WorldTag {name: $worldTag})
+
+(ProductSimple {sku_config  $skuConfig, size: $size, ksaUnits : $ksaUnits, uaeUnits : $uaeUnits})
+(Product)-[:HAS_SIMPLE]->(ProductSimple)
+
+=================================================================================================================================================================
+
+### Customer Nodes and Relationships
+------------------------------------
+
+(Customer {id: $customerId, 
+            gross_rpc_per_month: $RPC_gross_per_month , net_rpc_per_month: $RPC_net_per_month, tpc_per_month: $TPC_per_month,
+            last_purchased : $lastPurchased, last_session_date : $lastSessionDate, 
+            m0_purchase : $m0purchase, m0006_purchase : $m0006Purchase, 
+            m0612_purchase : $m0612Purchase, m1218_purchase : $m1218Purchase})
+(Customer)-[:BELONGS_TO]->(Gender {name: $gender})
+(Customer)-[:IN_GENERATION]->(Generation {name: $generationName, year: $generationYear})
+(Customer)-[:IN_COUNTRY]->(Country {name: $countryName})
+
+=================================================================================================================================================================
+
+### Customer Product Mapping based on purchase history and wishlist details
+---------------------------------------------------------------------------
+
+(Customer)-[:BOUGHT {order_date: $orderDateKey, id: $orderNr}]->(Product)
+(Customer)-[:BOUGHT {order_date: $orderDateKey, id: $orderNr, sales_order_item_id: $salesOrderItemId, sale_price: $salePrice}]->(ProductSimple)
+
+(Customer)-[:INTERESTED_IN {count: $totalInterests}]->(Product)
+(Customer)-[:INTERESTED_IN {count: $totalInterests}]->(ProductSimple)
+
+(Order {order_date: $orderDateKey, order_nr: $orderNr})
+
+(Product)-[:PART_OF]->(Order)
+(ProductSimple)-[:PART_OF {sales_order_item_id: $salesOrderItemId}]->(Order)
+
+(Customer)-[:ORDERED]->(Order)
+
+(Customer)-[:INTERESTED_CATEGORY {count:1}]->(Category)
+(Customer)-[:INTERESTED_SUBCATEGORY {count:1}]->(Subcategory)
+(Customer)-[:INTERESTED_BRAND {count:1}]->(Brand)
+(Customer)-[:INTERESTED_IN {count:1}]->(Department)
+(Customer)-[:INTERESTED_PRICE_LEVEL {count:1}]->(PriceLevel)
+(Customer)-[:INTERESTED_IN {count:1}]->(MerchType)
+
+=================================================================================================================================================================
+
+(Product)-[:IN_WISHLIST {updated_at: $updatedAt, count: 1}]->(Customer)

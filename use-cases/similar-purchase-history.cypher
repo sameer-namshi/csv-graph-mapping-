@@ -1,19 +1,19 @@
 // Find the top 3 most frequently purchased price levels by the customer with ID '5654988'
-MATCH (customer:Customer{id:$customerId})-[:BOUGHT]->(:Product)-[:HAS_PRICE_LEVEL]->(priceLevel:PriceLevel)
+MATCH (customer:Customer{id:$customerId})-[:BOUGHT_PRICE_LEVEL]->(priceLevel:PriceLevel)
 WITH priceLevel, count(*) AS priceLevelCount
 ORDER BY priceLevelCount DESC
 LIMIT 3
 WITH collect(priceLevel) as topPriceLevels
 
 // Find the top 3 most frequently purchased brands by the customer with ID $customerId, in combination with the top price levels
-MATCH (customer:Customer{id:$customerId})-[:BOUGHT]->(:Product)-[:BY_BRAND]->(brand:Brand)
+MATCH (customer:Customer{id:$customerId})-[:LIKES]->(brand:Brand)
 WITH brand, topPriceLevels, count(*) AS brandCount
 ORDER BY brandCount DESC
 LIMIT 3
 WITH collect(brand) as topBrands, topPriceLevels
 
 // Find the top 3 most frequently purchased subcategories by the customer with ID $customerId, in combination with the top price levels and brands
-MATCH (customer:Customer{id:$customerId})-[:BOUGHT]->(:Product)-[:IN_SUBCATEGORY]->(subcategory:Subcategory)
+MATCH (customer:Customer{id:$customerId})-[:INTERESTED_IN]->(subcategory:Subcategory)
 WITH topBrands, topPriceLevels, subcategory, count(*) AS subcategoryCount
 ORDER BY subcategoryCount DESC
 LIMIT 3
@@ -24,10 +24,10 @@ UNWIND topPriceLevels AS currentPriceLevel
 UNWIND topBrands AS currentBrand
 UNWIND topSubcategories AS currentSubcategory
 
-MATCH (product:Product)-[:BY_BRAND]->(currentBrand)
-MATCH (product)-[:HAS_PRICE_LEVEL]->(currentPriceLevel)
+MATCH (product:Product)-[:IN_BRAND]->(currentBrand)
+MATCH (product)-[:IN_PRICE_LEVEL]->(currentPriceLevel)
 MATCH (product)-[:IN_SUBCATEGORY]->(currentSubcategory)
-MATCH (product)-[:IN_COLOR]->(color:Color)
+MATCH (product)-[:HAS_COLOR]->(color:Color)
 MATCH (product)-[:FOR_OCCASION]->(occasion:Occasion)
 
 WHERE NOT (:Customer{id:$customerId})-[:BOUGHT]->(product)

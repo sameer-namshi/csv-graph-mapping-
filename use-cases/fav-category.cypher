@@ -1,4 +1,4 @@
-MATCH (customer:Customer{id:$customerId})-[:BOUGHT]->(:Product)-[:IN_SUBCATEGORY]->(subcategory:Subcategory)
+MATCH (customer:Customer{id:$customerId})-[:INTERESTED_IN]->(subcategory:Subcategory)
 WITH subcategory, count(*) AS subcategoryCount
 ORDER BY subcategoryCount DESC
 LIMIT 3
